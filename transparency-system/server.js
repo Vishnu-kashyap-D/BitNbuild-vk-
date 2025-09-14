@@ -9,6 +9,8 @@ const authRoutes = require('./src/routes/auth');
 const donationRoutes = require('./src/routes/donations');
 const allocationRoutes = require('./src/routes/allocations');
 const donorRoutes = require('./src/routes/donor');
+const budgetRequestRoutes = require('./src/routes/budgetRequests');
+const donorDonationRoutes = require('./src/routes/donorDonations');
 
 // Import database connection
 const pool = require('./src/config/database');
@@ -32,7 +34,7 @@ app.use(helmet({
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? ['https://yourdomain.com'] // Add your production domain(s)
-    : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'], // Development origins
+    : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:5173'], // Development origins
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -95,6 +97,8 @@ app.get('/health', async (req, res) => {
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/donations', donationRoutes);
 app.use('/api/allocations', allocationRoutes);
+app.use('/api/budget-requests', budgetRequestRoutes);
+app.use('/api/donor-donations', donorDonationRoutes);
 
 // Special donor route - this matches the required endpoint pattern
 // GET /api/donations/:source_tag/allocations
@@ -117,6 +121,19 @@ app.get('/', (req, res) => {
         getAll: 'GET /api/donations (Admin only)',
         getById: 'GET /api/donations/:id (Admin only)',
         getStats: 'GET /api/donations/stats (Admin only)'
+      },
+      donorDonations: {
+        create: 'POST /api/donor-donations (Donor only)',
+        getMyDonations: 'GET /api/donor-donations/my-donations (Donor only)',
+        getAll: 'GET /api/donor-donations/all (Admin only)',
+        getStats: 'GET /api/donor-donations/admin/stats (Admin only)'
+      },
+      budgetRequests: {
+        create: 'POST /api/budget-requests (Student/Department only)',
+        getAll: 'GET /api/budget-requests (Admin only)',
+        getMyRequests: 'GET /api/budget-requests/my-requests (Student/Department only)',
+        updateStatus: 'PATCH /api/budget-requests/:id/status (Admin only)',
+        getStats: 'GET /api/budget-requests/admin/stats (Admin only)'
       },
       allocations: {
         create: 'POST /api/allocations (Admin only)',

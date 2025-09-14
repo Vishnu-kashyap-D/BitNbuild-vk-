@@ -17,7 +17,7 @@ const authenticateToken = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Fetch user from database to ensure they still exist
-    const userQuery = 'SELECT id, email, role, source_tag FROM users WHERE id = $1';
+    const userQuery = 'SELECT id, email, role, source_tag FROM users WHERE id = ?';
     const userResult = await pool.query(userQuery, [decoded.userId]);
     
     if (userResult.rows.length === 0) {
@@ -27,7 +27,12 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    req.user = userResult.rows[0];
+    req.user = {
+      userId: userResult.rows[0].id,
+      email: userResult.rows[0].email,
+      role: userResult.rows[0].role,
+      source_tag: userResult.rows[0].source_tag
+    };
     next();
   } catch (error) {
     console.error('Authentication error:', error);
@@ -77,8 +82,30 @@ const requireDonorAccess = (req, res, next) => {
   next();
 };
 
+// Generic role checker
+const requireRole = (allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+    
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. Required roles: ${allowedRoles.join(', ')}`
+      });
+    }
+    
+    next();
+  };
+};
+
 module.exports = {
   authenticateToken,
   requireAdmin,
-  requireDonorAccess
+  requireDonorAccess,
+  requireRole
 };
